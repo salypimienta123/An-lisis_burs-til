@@ -6,6 +6,7 @@ from src.charts import grafico_xtb
 from src.download_data import descargar_datos
 from src.heatmaps import rentabilidades_anuales
 from src.heatmaps import crear_heatmap
+from src.heatmaps_gpt import heatmap_interactivo_empresa
 from src.forex import grafico_divisas
 from src.fundamentals import obtener_fundamentales
 from src.stats import estadisticas
@@ -37,7 +38,7 @@ st.divider()
 # PESTAÑAS
 # --------------------------------------------------
 
-tab1, tab2, tab3, tab4 = st.tabs(["📚Inversion","📈 Acciones","💱 Divisas","📈 Comparativa"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📚Inversion","📈 Acciones","💱 Divisas","📈 Comparativa","Heatmap GPT"])
 
 # --------------------------------------------------
 # Inversiones
@@ -314,6 +315,51 @@ with tab4:
     # ----------------------------------
     st.divider()
     st.subheader("📈 Comparativa frente al Mercado")
-    fig_comp = comparativa_activos(ticker)
-    st.pyplot(fig_comp, use_container_width=True)
-    col_fund, col_stats = st.columns(2)
+    col_accion, col_periodo, col_boton = st.columns([1, 1, 2])
+
+    with col_accion:
+        ticker_comp = st.text_input(
+            "Accion",
+            value="MSFT",
+            key="ticker_comparativa",
+        ).upper()
+
+    with col_periodo:
+        periodo_comp = st.selectbox(
+            "Periodo",
+            ["1y", "3y", "5y", "10y"],
+            index=2,
+            key="periodo_comparativa",
+        )
+
+    with col_boton:
+        st.write("")
+        st.write("")
+        ejecutar_comparativa = st.button(
+            "Comparar con mercados",
+            key="boton_comparativa",
+        )
+
+    if ejecutar_comparativa:
+        comparativa_activos(ticker_comp, periodo_comp)
+
+with tab5:
+    st.subheader("Heatmap interactivo de rentabilidades")
+
+    col_ticker, col_boton = st.columns([1, 3])
+
+    with col_ticker:
+        ticker_gpt = st.text_input(
+            "Ticker",
+            value="MSFT",
+            key="ticker_heatmap_gpt",
+        ).upper()
+
+    with col_boton:
+        st.write("")
+        st.write("")
+        ejecutar_heatmap = st.button("Consultar empresa", key="boton_heatmap_gpt")
+
+    if ejecutar_heatmap:
+        with st.container(border=True):
+            heatmap_interactivo_empresa(ticker_gpt)
