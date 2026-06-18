@@ -1,4 +1,5 @@
 import streamlit as st
+import yfinance as yf
 
 from src.comparativa import comparativa_activos
 from src.charts import grafico_xtb
