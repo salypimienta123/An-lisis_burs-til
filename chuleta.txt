@@ -1,0 +1,167 @@
+========================================
+🚀 CHULETA GITHUB + STREAMLIT
+========================================
+
+----------------------------------------
+1. Ver estado del proyecto
+----------------------------------------
+
+git status
+
+----------------------------------------
+2. Añadir todos los cambios
+----------------------------------------
+
+git add .
+
+----------------------------------------
+3. Crear commit
+----------------------------------------
+
+git commit -m "Actualización aplicación"
+
+Ejemplos:
+
+git commit -m "Añadida comparativa SP500 y Bitcoin"
+
+git commit -m "Mejorado heatmap"
+
+git commit -m "Actualización aplicación"
+
+----------------------------------------
+4. Subir a GitHub
+----------------------------------------
+
+git push origin main
+
+========================================
+⚠️ SI HAY CONFLICTO
+========================================
+
+git pull origin main
+
+git push origin main
+
+========================================
+⚠️ FORZAR SUBIDA
+========================================
+
+git push origin main --force
+
+(Solo si el repositorio es tuyo)
+
+========================================
+VER ÚLTIMOS COMMITS
+========================================
+
+git log --oneline -5
+
+========================================
+VER REPOSITORIO REMOTO
+========================================
+
+git remote -v
+
+========================================
+ELIMINAR ARCHIVO DEL REPOSITORIO
+========================================
+
+git rm nombre_archivo
+
+git commit -m "Eliminar archivo"
+
+git push origin main
+
+Ejemplo:
+
+git rm uv.lock
+
+git commit -m "Remove uv lock"
+
+git push origin main
+
+========================================
+REGENERAR REQUIREMENTS
+========================================
+
+pip freeze > requirements.txt
+
+========================================
+INSTALAR PAQUETE
+========================================
+
+pip install nombre_paquete
+
+Ejemplo:
+
+pip install yfinance
+
+Versión concreta:
+
+pip install yfinance==0.2.65
+
+========================================
+VER VERSIÓN INSTALADA
+========================================
+
+pip show yfinance
+
+========================================
+EJECUTAR STREAMLIT
+========================================
+
+streamlit run app.py
+
+========================================
+FLUJO HABITUAL
+========================================
+
+git add .
+
+git commit -m "Actualización aplicación"
+
+git push origin main
+
+========================================
+STREAMLIT CLOUD
+========================================
+
+1. Hacer push a GitHub
+
+2. Streamlit detecta cambios automáticamente
+
+3. Si no actualiza:
+
+Manage App
+↓
+Reboot App
+
+o
+
+Manage App
+↓
+Settings
+↓
+Redeploy
+
+========================================
+
+
+streamlit run app.py
+
+cd "C:\Users\costa\OneDrive - Universitat Oberta de Catalunya\Varios\Proyecto Acciones Bolsa"
+streamlit run app.py
+
+
+# Ejecutar app
+streamlit run app.py
+
+# Hacer cambios en PyCharm
+
+# Subir a GitHub
+git add .
+git commit -m "Descripción cambios"
+git push origin main
+
+http://localhost:8501
+

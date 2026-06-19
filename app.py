@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import yfinance as yf
 
 from src.comparativa import comparativa_activos
@@ -7,9 +8,55 @@ from src.download_data import descargar_datos
 from src.heatmaps import rentabilidades_anuales
 from src.heatmaps import crear_heatmap
 from src.heatmaps_gpt import heatmap_interactivo_empresa
+from src.forex import analisis_bayesiano
+from src.forex import analizar_noticias
 from src.forex import grafico_divisas
 from src.fundamentals import obtener_fundamentales
 from src.stats import estadisticas
+from src.mapa import crear_mapa_indices
+
+
+def mostrar_bloque_noticias(noticias, impacto_bayesiano=None):
+    st.markdown("### 📰 Noticias recientes")
+
+    if not noticias["noticias"]:
+        st.info("No hay noticias recientes disponibles para este ticker.")
+        return
+
+    impacto = impacto_bayesiano
+    if impacto is None:
+        signo = 1 if noticias["score"] >= 0 else -1
+        impacto = signo * noticias["peso_bayesiano"] * 100
+
+    col_sent, col_impacto, col_pos, col_neg = st.columns(4)
+    col_sent.metric("Sentimiento agregado", f"{noticias['score']:+.0f}")
+    col_impacto.metric("Impacto Bayesiano", f"{impacto:+.2f}%")
+    col_pos.metric("Noticias positivas", noticias["positivas"])
+    col_neg.metric("Noticias negativas", noticias["negativas"])
+
+    tabla_noticias = [
+        {
+            "Fecha": noticia["fecha"],
+            "Fuente": noticia["fuente"],
+            "Sentimiento": noticia["sentimiento"],
+            "Titulo original": noticia["titulo"],
+            "Traduccion ES": noticia["titulo_es"],
+            "Leer noticia": noticia["url"],
+        }
+        for noticia in noticias["noticias"]
+    ]
+    st.dataframe(
+        tabla_noticias,
+        use_container_width=True,
+        column_config={
+            "Leer noticia": st.column_config.LinkColumn(
+                "Leer noticia",
+                display_text="Abrir enlace",
+            )
+        },
+        hide_index=True,
+    )
+
 
 # --------------------------------------------------
 # CONFIGURACIÓN
@@ -38,7 +85,7 @@ st.divider()
 # PESTAÑAS
 # --------------------------------------------------
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📚Inversion","📈 Acciones","💱 Divisas","📈 Comparativa","Heatmap GPT"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📚Inversion","📈 Acciones","🧠 Bayes Investing","📉 Comparativa","🔥 Heatmap GPT","🌍 Mapa Mundial"])
 
 # --------------------------------------------------
 # Inversiones
@@ -143,46 +190,47 @@ with tab1:
         with st.container(border=True):
             st.markdown("### 📖 Teorema de Bayes")
 
-            st.latex(r"P(H|D)=\frac{P(D|H)P(H)}{P(D)}")
+            st.latex(r"P(\text{Compra}\mid E)=\frac{P(E\mid\text{Compra})P(\text{Compra})}{P(E)}")
 
             st.write("""
-            - H = hipótesis
-            - D = datos observados
-            - Base de la inferencia bayesiana
+            - Hipótesis: la acción es una buena compra
+            - E = evidencias observadas de la empresa
+            - No predice precios: actualiza una probabilidad de compra
             """)
 
         with st.container(border=True):
             st.markdown("### 🎯 Actualización Bayesiana")
 
-            st.latex(r"P(\theta|X)\propto P(X|\theta)P(\theta)")
+            st.latex(r"\text{Odds posteriores}=\text{Odds previos}\times LR(E)")
 
             st.write("""
-            - Prior
-            - Likelihood
-            - Posterior
+            - Prior inicial: 50%
+            - Cada evidencia positiva aumenta las odds
+            - Cada evidencia negativa reduce las odds
             """)
 
     with col2:
         with st.container(border=True):
-            st.markdown("### 📈 Modelo de Rentabilidades")
+            st.markdown("### 📈 Evidencias utilizadas")
 
-            st.latex(r"r_t \sim N(\mu,\sigma^2)")
-            st.latex(r"\mu \sim N(\mu_0,\tau^2)")
+            st.latex(r"E=\{Value,Dividend,Growth,Momentum,Quality,News\}")
 
             st.write("""
-            Modelo básico para retornos financieros.
+            - Fundamentales y valoración
+            - Calidad, crecimiento y momentum
+            - Noticias recientes con peso máximo limitado
             """)
 
         with st.container(border=True):
             st.markdown("### 🤖 Aplicación al Proyecto")
 
             st.latex(
-                r"P(\text{Batir SP500}\mid\text{Fundamentales, Momentum, Calidad})"
+                r"P(\text{Compra}\mid\text{Value,Quality,Growth,Momentum,News})"
             )
 
             st.write("""
-            Probabilidad posterior de que una acción
-            supere al mercado.
+            El resultado final clasifica la acción como
+            Venta, Evitar, Neutral, Compra o Compra Fuerte.
             """)
 
 # --------------------------------------------------
@@ -244,6 +292,13 @@ with tab2:
         # ----------------------------------
         st.divider()
         # ----------------------------------
+        with st.container(border=True):
+            with st.spinner("Analizando noticias recientes..."):
+                noticias_accion = analizar_noticias(ticker)
+            mostrar_bloque_noticias(noticias_accion)
+        # ----------------------------------
+        st.divider()
+        # ----------------------------------
         # ----------------------------------
         # ----------------------------------
         # ----------------------------------
@@ -301,14 +356,102 @@ with tab2:
 
 with tab3:
 
-    st.subheader("Análisis de Divisas")
+    st.subheader("🧠 Bayes Investing")
 
-    fig = grafico_divisas()
+    st.markdown("""
+    Este analisis no predice el precio futuro. Estima la probabilidad de compra
+    actualizando un prior inicial con evidencias fundamentales, tecnicas y de calidad.
+    """)
 
-    st.pyplot(
-        fig,
-        use_container_width=True
-    )
+    col_ticker_bayes, col_boton_bayes = st.columns([1, 3])
+
+    with col_ticker_bayes:
+        ticker_bayes = st.text_input(
+            "Ticker",
+            value="MSFT",
+            key="ticker_bayes",
+        ).upper()
+
+    with col_boton_bayes:
+        st.write("")
+        st.write("")
+        ejecutar_bayes = st.button("Analizar con Bayes", key="boton_bayes")
+
+    st.latex(r"P(H|E)=\frac{P(E|H)P(H)}{P(E)}")
+    st.latex(r"\text{Odds posteriores}=\text{Odds previos}\times LR")
+
+    if ejecutar_bayes:
+        try:
+            with st.spinner("Calculando evidencias bayesianas..."):
+                resultado_bayes = analisis_bayesiano(ticker_bayes)
+
+            st.divider()
+            st.markdown(f"### {resultado_bayes['nombre']}")
+
+            col_prior, col_post, col_clasif = st.columns(3)
+            col_prior.metric("Prior inicial", f"{resultado_bayes['prior']:.0f}%")
+            col_post.metric("Probabilidad de Compra", f"{resultado_bayes['posterior']:.0f}%")
+            col_clasif.metric("Clasificacion", resultado_bayes["clasificacion"])
+
+            st.progress(int(resultado_bayes["posterior"]))
+
+            st.divider()
+            st.markdown("### Scores por filosofia")
+
+            score_cols = st.columns(5)
+            for columna, (nombre_score, valor_score) in zip(
+                score_cols,
+                resultado_bayes["scores"].items(),
+            ):
+                columna.metric(nombre_score.replace(" Investing", ""), f"{valor_score:.0f}/100")
+
+            st.markdown(
+                f"""
+                ### 🏆 Filosofia dominante de inversion:
+                **{resultado_bayes['filosofia_dominante'].upper()}**
+                """
+            )
+
+            st.divider()
+            st.markdown("### Evidencias y actualizacion posterior")
+
+            evidencias_tabla = [
+                {
+                    "Evidencia": evidencia["evidencia"],
+                    "Resultado": evidencia["resultado"],
+                    "Cambio": f"{evidencia['cambio']:+.2f}%",
+                    "Posterior": f"{evidencia['posterior']:.2f}%",
+                }
+                for evidencia in resultado_bayes["evidencias"]
+            ]
+            st.dataframe(evidencias_tabla, use_container_width=True)
+
+            st.divider()
+            st.markdown("### Comparacion frente a indices")
+
+            comparacion = [
+                {
+                    "Indice": fila["indice"],
+                    "Accion": f"{fila['rentabilidad_accion']:.2f}%",
+                    "Indice rent.": f"{fila['rentabilidad_indice']:.2f}%",
+                    "Bate indice": "Si" if fila["bate_indice"] else "No",
+                }
+                for fila in resultado_bayes["comparacion_indices"]
+            ]
+
+            if comparacion:
+                st.dataframe(comparacion, use_container_width=True)
+            else:
+                st.info("No hay datos suficientes para comparar contra indices.")
+
+            st.divider()
+            mostrar_bloque_noticias(
+                resultado_bayes["noticias"],
+                resultado_bayes["impacto_noticias"],
+            )
+
+        except Exception as exc:
+            st.error(f"No se pudo completar el analisis bayesiano: {exc}")
 with tab4:
     #----------------------------------
     # comparativa sp, btc y msci world
@@ -363,3 +506,25 @@ with tab5:
     if ejecutar_heatmap:
         with st.container(border=True):
             heatmap_interactivo_empresa(ticker_gpt)
+
+with tab6:
+    st.subheader("Mapa mundial de indices bursatiles")
+
+    periodo_mapa = st.selectbox(
+        "Temporalidad",
+        ["Día", "Mes", "Año", "5 años"],
+        index=1,
+        key="periodo_mapa_mundial",
+    )
+
+    try:
+        with st.spinner("Cargando datos de indices mundiales..."):
+            mapa_indices = crear_mapa_indices(periodo_mapa)
+
+        components.html(
+            mapa_indices._repr_html_(),
+            height=680,
+            scrolling=False,
+        )
+    except ModuleNotFoundError as exc:
+        st.error(f"Falta instalar la dependencia requerida: {exc.name}")
